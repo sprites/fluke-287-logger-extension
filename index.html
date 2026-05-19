@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fluke 287 Logger</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Fluke 287 Logger</h1>
+      <div class="status" id="statusLine"><span class="dot" id="statusDot"></span><span id="statusText">Nicht verbunden</span></div>
+    </header>
+
+    <main>
+      <aside>
+        <section class="panel">
+          <div class="section">
+            <h2>Verbindung</h2>
+            <div class="controls">
+              <div class="buttons">
+                <button class="primary" id="connectBtn" type="button" title="Mit einem seriellen Gerät verbinden">
+                  <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="M5 12h14"/><path d="m7 7 10 10"/></svg>
+                  Verbinden
+                </button>
+                <button id="disconnectBtn" type="button" title="Verbindung schließen" disabled>
+                  <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                  Trennen
+                </button>
+              </div>
+
+              <div class="row">
+                <label for="portSelect">Port</label>
+                <select id="portSelect">
+                  <option value="">Noch keine freigegebenen Ports</option>
+                </select>
+              </div>
+
+              <div class="buttons">
+                <button id="refreshPortsBtn" type="button" title="Freigegebene Ports neu laden">
+                  <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+                  Aktualisieren
+                </button>
+                <button id="pickPortBtn" type="button" title="Einen neuen Port im Chrome-Dialog auswählen">
+                  <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/></svg>
+                  Neuer Port
+                </button>
+              </div>
+
+              <div class="row">
+                <label for="commandSelect">Befehl</label>
+                <select id="commandSelect">
+                  <option value="QM">QM - Primary measurement</option>
+                  <option value="QDDA">QDDA - Display data</option>
+                </select>
+              </div>
+
+              <div class="row">
+                <label for="intervalInput">Abtastintervall (ms)</label>
+                <input id="intervalInput" type="number" min="100" step="50" value="1000">
+              </div>
+
+              <div class="buttons">
+                <button class="primary" id="recordBtn" type="button" disabled title="Aufzeichnung starten oder stoppen">
+                  <svg class="svg-icon" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                  Start
+                </button>
+                <button id="singleBtn" type="button" disabled title="Eine einzelne Messung erfassen">
+                  <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                  Einzeln
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h2>Status</h2>
+            <div class="metrics">
+              <div class="metric">
+                <div class="k">Letzter Wert</div>
+                <div class="v" id="lastValue">-</div>
+              </div>
+              <div class="metric">
+                <div class="k">Einheit</div>
+                <div class="v" id="lastUnit">-</div>
+              </div>
+              <div class="metric">
+                <div class="k">Messungen</div>
+                <div class="v" id="sampleCount">0</div>
+              </div>
+              <div class="metric">
+                <div class="k">Letzte Zeit</div>
+                <div class="v" id="lastTime">-</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h2>Daten</h2>
+            <div class="buttons">
+              <button id="exportBtn" type="button" disabled title="CSV herunterladen">
+                <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+                CSV export
+              </button>
+              <button class="danger" id="clearBtn" type="button" title="Aufzeichnung löschen">
+                <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 15h10l1-15"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                Leeren
+              </button>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="hint" id="helpText">
+              Serielle Verbindung mit dem Fluke 287 über Web Serial. Die App lädt die Oberfläche intern, empfohlen am Gerät: 115200, 8N1.
+            </div>
+          </div>
+        </section>
+      </aside>
+
+      <section class="panel chart-wrap">
+        <div class="chart-header">
+          <div>
+            <h2>Diagramm</h2>
+            <div class="small" id="chartLabel">Keine Daten</div>
+          </div>
+          <div class="pill" id="modePill">bereit</div>
+        </div>
+
+        <div class="canvas-shell">
+          <canvas id="chart" width="1200" height="700"></canvas>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Zeit</th>
+                <th>Wert</th>
+                <th>Einheit</th>
+                <th>Status</th>
+                <th>Attribut</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody">
+              <tr><td colspan="5" class="hint" style="padding: 1rem 0.8rem;">Noch keine Messung erfasst.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
